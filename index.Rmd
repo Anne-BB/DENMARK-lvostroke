@@ -278,3 +278,23 @@ p<-mapview(StrokeHeli,map.type="OpenStreetMap.HOT", alpha.regions=0.5)+mapview(H
 p
 mapshot(p, url = paste0(getwd(),file="/denmark_stroke_nuts2_catchment.html"), file = paste0(getwd(), "/denmark_stroke_nuts2_catchment.png"))
 ```
+###Strokedensity
+#remove number before slash sign
+#then remove slash sign
+denmarkstrokepdf$strokenum<-str_replace(denmarkstrokepdf$X3, "[0-9]*","")%>% str_replace("/","\\")
+save(denmarkstrokepdf, file= "denmarkstrokepdf.Rda")
+
+###Kommunemap
+Kommuner<-st_read("./DAGIREF_SHAPE_UTM32-EUREF89/ADM/KOMMUNE.shp")
+mapview(Kommuner)
+#View(Kommuner)
+if(file.exists("DemoKom.Rda")){load("DemoKom.Rda")} else {
+DemoKom<-select(Kommuner, starts_with("KOM"), starts_with("geometry"))
+save(DemoKom, file = "DemoKom.Rda")}
+
+##join DemoKom (demografic) with denmarkstroke (strokedensity)
+if(file.exists("DemoStroke.Rda")){load("DemoStroke.Rda")} else {
+DemoStroke<-right_join(denmarkstrokepdf, DemoKom, by=c("Uoplyst" = "KOMNAVN"))
+save(DemoStroke, file = "DemoStroke.Rda")}
+View(DemoStroke)
+
