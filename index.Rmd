@@ -102,14 +102,14 @@ plot(DKnuts2_sf["NUTS_NAME"])
 #######################
 #ggplot with simple features
 #colour by NUTS
-ggplot(data=DKnuts2_sf,aes(fill=NUTS_NAME))+geom_sf()
+#ggplot(data=DKnuts2_sf,aes(fill=NUTS_NAME))+geom_sf()
 
-g<-ggplot() + # set up the framework
-  geom_sf(data=DKnuts2_sf,aes(fill=NUTS_NAME))+
+#g<-ggplot() + # set up the framework
+  #geom_sf(data=DKnuts2_sf,aes(fill=NUTS_NAME))+
   #geom_point(data=df_sf,aes(x=Lon, y=Latitude), fill="orange", pch=21, alpha=0.7, size=2)+
-  labs(x="Longitude (WGS84)", y="Latitude", title="Map of Points") + 
-  theme_bw() # change this to sans if it doesn't plot
-g
+  #labs(x="Longitude (WGS84)", y="Latitude", title="Map of Points") + 
+  #theme_bw() # change this to sans if it doesn't plot
+#g
 
 
 
@@ -137,7 +137,7 @@ g
 #europeRGDK<-europeRG %>% filter(str_detect(COMM_ID,"^DK"))
 #save(europeRGDK,file="europeRGDK.Rda")
 #load("europeRGDK.Rda")
-mapview(europeRGDK["Shape_Area"])
+#mapview(europeRGDK["Shape_Area"])
 
 
 ```
@@ -281,20 +281,42 @@ mapshot(p, url = paste0(getwd(),file="/denmark_stroke_nuts2_catchment.html"), fi
 ###Strokedensity
 #remove number before slash sign
 #then remove slash sign
+library(readr)
+denmarkstrokepdf <- read_csv("denmarkstrokepdf.csv")
+
 denmarkstrokepdf$strokenum<-str_replace(denmarkstrokepdf$X3, "[0-9]*","")%>% str_replace("/","\\")
 save(denmarkstrokepdf, file= "denmarkstrokepdf.Rda")
 
 ###Kommunemap
 Kommuner<-st_read("./DAGIREF_SHAPE_UTM32-EUREF89/ADM/KOMMUNE.shp")
-mapview(Kommuner)
-#View(Kommuner)
-if(file.exists("DemoKom.Rda")){load("DemoKom.Rda")} else {
-DemoKom<-select(Kommuner, starts_with("KOM"), starts_with("geometry"))
-save(DemoKom, file = "DemoKom.Rda")}
+save(Kommuner, file="Kommuner.Rda")
+mapview(kommuner)
+View(Kommuner)
+Kommuner1<-select(Kommuner, starts_with("KOMNAVN"), starts_with("KOMKODE"))
+save(Kommuner1, file="Kommuner1.Rda")
+
+
+#Kommuner.multi<-group_by(Kommuner,KOMKODE)%>%summarize(geometry=st_combine(geometry))
+#save(Kommuner.multi, file="Kommuner.multi.Rda")
+#Kommunerfinal<-st_join(Kommuner.multi, Kommuner1, by=c(KOMKODE))
+#View(Kommunerfinal)
+
+Kommuner.multi1<-group_by(Kommuner,KOMNAVN)%>%summarize(geometry=st_combine(geometry))
+save(Kommuner.multi, file="Kommuner.multi1.Rda")
+###Kommuner.multi1 is the shapefile!
+
 
 ##join DemoKom (demografic) with denmarkstroke (strokedensity)
 if(file.exists("DemoStroke.Rda")){load("DemoStroke.Rda")} else {
-DemoStroke<-right_join(denmarkstrokepdf, DemoKom, by=c("Uoplyst" = "KOMNAVN"))
+DemoStroke<-right_join(denmarkstrokepdf, Kommuner.multi1, by=c("Uoplyst" = "KOMNAVN"))
 save(DemoStroke, file = "DemoStroke.Rda")}
 View(DemoStroke)
+
+###UPS first st_sf transform or crs?###
+mapview(DemoStroke)
+
+library(tmap)
+tmap_mode("view")
+DemoStroke<-mutate(DemoStroke)
+tm_shape(DemoStroke, name= "Strokes inDK kommuner 2018")+tm_polygons("stroke_DK_2018", id="Strokenum", popup.vars=c("Cases"="stroke_DK_2018"), alpha=0.6)
 
