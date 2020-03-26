@@ -11,4 +11,4 @@ The map below contains data on number of stroke in 2018 within each NUTS2 region
 
 [![denmark stroke hospital](./denmark_stroke_nuts2_catchment.png)](./denmark_stroke_nuts2_catchment.html)
 
-
+[![denmark stroke hospital kommuner](./denmark_stroke_kommuner.png)](./denmark_stroke_kommuner.html)
