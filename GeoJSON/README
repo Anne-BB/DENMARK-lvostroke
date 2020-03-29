@@ -1,5 +1,0 @@
-Various GeoJSON files. The R file here shows how they should be
-retrieved.
-
-Avoid committing the GeoJSON files to git, unless absolutely
-necessary.
