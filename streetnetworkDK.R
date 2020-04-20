@@ -32,7 +32,38 @@ format (nrow (DK_streets), big.mark = ",")
 #[1] "170,940"
 
 #estimate travel time by distance
-net <- weight_streetnet (DK_streets, wt_profile = "motorcar")
+format (nrow (net), big.mark = ",")
+#[1] "1,275,125"
+
+#
+
+library(dodgr)
+library(tidyverse)
+library(sf)
+
+load("DemoStroke_sf.Rda")
+
+#bounding polygom
+bounding_polygon <- sf::st_transform(DemoStroke_sf,
+                                     sf::st_crs(4326)) %>%
+  sf::st_union () %>%
+  sf::st_coordinates ()
+bounding_polygon <- bounding_polygon [, 1:2]
+
+DK1_streets <- dodgr_streetnet (bounding_polygon, expand = 0, quiet = FALSE)
+
+#save street network
+saveRDS(DK1_streets, file="DK1_streets.Rds")
+
+#load streetnetwork
+#DK1_streets<-readRDS("DK1_streets.Rds")
+
+#number of distinct street lines
+format (nrow (DK1_streets), big.mark = ",")
+#[1] "170,940"
+
+#estimate travel time by distance
+net <- weight_streetnet (DK1_streets, wt_profile = "motorcar")
 format (nrow (net), big.mark = ",")
 #[1] "1,275,125"
 
