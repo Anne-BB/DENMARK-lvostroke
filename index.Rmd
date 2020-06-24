@@ -31,10 +31,10 @@ library(tmaptools)
 #download geospatial data for NUTS-3 regions
 
 #euro_nuts3_sf <-
-# eurostat::get_eurostat_geospatial(output_class = #'sf', resolution = '60', nuts_level = 3) %>%
-# sf::st_transform(crs = 3035)
+ #eurostat::get_eurostat_geospatial(output_class = #'sf', resolution = '60', nuts_level = 3) %>%
+ #sf::st_transform(crs = 3035)
 #save(euro_nuts3_sf,file="euro_nuts3_sf.Rda")
-#load("euro_nuts3_sf.Rda")
+load("euro_nuts3_sf.Rda")
 
 #download geospatial data for NUTS-2 regions
 #euro_nuts2_sf <-
@@ -62,16 +62,16 @@ load("europeRGDK.Rda")
 #does not need to get key like google maps api
 
 #hosp_addresses <- c(AarhusHospital = "aarhus university hospital, aarhus, Denmark",
-#                     AalborgHospital = "aalborg university hospital, aalborg, Denmark",
- #                   HolstebroHospital = "Regionshospitalet Holstebro, Holstebro, Denmark",
-#                    VejleHospital="Vejle Sygehus,Beriderbakken 4, Vejle, Denmark",
-#                    EsbjergHospital="Esbjerg Sygehus, Esbjerg, Denmark",
-                    #SoenderborgHospital="Soenderborg Sygehus,1 Sydvang, Sønderborg Denmark",
-#        OdenseHospital="Odense Sygehus, Odense, Denmark",   
-#        RoskildeHospital="Roskilde Sygehus,  Roskilde, Denmark",  
-#        BlegdamsvejHospital="Rigshospitalet blegdamsvej, 9 Blegdamsvej, København, Denmark",  
-#        GlostrupHospital="Rigshospitalet Glostrup, Glostrup, Denmark")
-
+ #                    AalborgHospital = "aalborg university hospital, aalborg, Denmark",
+  #                 HolstebroHospital = "Regionshospitalet Holstebro, Holstebro, Denmark",
+   #                 VejleHospital="Vejle Sygehus,Beriderbakken 4, Vejle, Denmark",
+    #                EsbjergHospital="Esbjerg Sygehus, Esbjerg, Denmark",
+     #               SoenderborgHospital="Soenderborg Sygehus,1 Sydvang, Sønderborg Denmark",
+      #  OdenseHospital="Odense Sygehus, Odense, Denmark",   
+       # RoskildeHospital="Roskilde Sygehus,  Roskilde, Denmark",  
+        #BlegdamsvejHospital="Rigshospitalet blegdamsvej, 9 Blegdamsvej, København, Denmark",  
+        #GlostrupHospital="Rigshospitalet Glostrup, Glostrup, Denmark")
+#save(hosp_addresses, file = "hosp_adresses.rda")
 #HospLocations <- tmaptools::geocode_OSM(hosp_addresses, as.sf=TRUE)
 
 #HospLocations <- sf::st_transform(HospLocations,
@@ -136,7 +136,7 @@ plot(DKnuts2_sf["NUTS_NAME"])
 
 #europeRGDK<-europeRG %>% filter(str_detect(COMM_ID,"^DK"))
 #save(europeRGDK,file="europeRGDK.Rda")
-#load("europeRGDK.Rda")
+load("europeRGDK.Rda")
 #mapview(europeRGDK["Shape_Area"])
 
 
@@ -207,21 +207,22 @@ europeRGDK <- mutate(europeRGDK,
        DirectDistanceToBlegdamsvej     = dist_to_loc(geometry,HospLocations["BlegdamsvejHospital", ]),
        DirectDistanceToGlostrup     = dist_to_loc(geometry,HospLocations["GlostrupHospital", ]),
        #
-       DirectDistanceToNearest   = pmin(DirectDistanceToAarhus,
+       DirectDistanceToNearestHosp   = pmin(DirectDistanceToAarhus,
                                       DirectDistanceToAalborg,DirectDistanceToHolstebro,
                                  DirectDistanceToVejle,DirectDistanceToEsbjerg, DirectDistanceToSoenderborg,DirectDistanceToOdense,DirectDistanceToRoskilde,DirectDistanceToBlegdamsvej,DirectDistanceToGlostrup
                                  
                                       )
+    
     )
 
-#reduce from 2178 communes to 992
+#reduce from 2178 communes to 992??
 StrokeHosp <- filter(europeRGDK,
-                                 DirectDistanceToNearest < dist_range) %>%
+                                 DirectDistanceToNearestHosp < dist_range) %>%
         mutate(Postcode = as.numeric(COMM_ID)) %>%
         select(-starts_with("DK"))
 
 
-p<-mapview(StrokeHosp,map.type="OpenStreetMap.HOT", alpha.regions=0.5)+mapview(HospLocations, zcol="Center")+mapview(DKnuts2_sf2["strokenum"])
+p<-mapview(StrokeHosp,map.type="OpenStreetMap.HOT", alpha.regions=0.5, zcol="DirectDistanceToAarhus") +mapview(HospLocations, zcol="Center")+mapview(DKnuts2_sf2["strokenum"])
 p
 mapshot(p, url = paste0(getwd(),file="denmark_stroke_nuts2_catchment.html"), file = paste0(getwd(), "/denmark_stroke_nuts2_catchment.png"))
 
@@ -255,7 +256,7 @@ dist_to_loc_Heli <- function (geometry, location){
 }
 #set distance 10 km
 #change to 200 km
-dist_range <- units::set_units(200, km)
+dist_range <- units::set_units(90, km)
 
 
 ##
@@ -266,6 +267,8 @@ europeRGDK <- mutate(europeRGDK,
        DirectDistanceToRingstedHeli     = dist_to_loc(geometry,HeliLocations["RingstedHeli", ]),
               #
        DirectDistanceToNearestHeli   = pmin(DirectDistanceToAalborgHeli,           DirectDistanceToSkiveHeli, DirectDistanceToBillundHeli,                           DirectDistanceToRingstedHeli))
+
+save(europeRGDK, file = "europeRGDK.Rda")
 
 #reduce from 2178 communes to 992
 StrokeHeli <- filter(europeRGDK,
@@ -283,40 +286,53 @@ mapshot(p, url = paste0(getwd(),file="/denmark_stroke_nuts2_catchment.html"), fi
 #then remove slash sign
 library(readr)
 denmarkstrokepdf <- read_csv("denmarkstrokepdf.csv")
+save(denmarkstrokepdf, file= "denmarkstrokepdf.Rda")
 
-denmarkstrokepdf$strokenum<-str_replace(denmarkstrokepdf$X3, "[0-9]*","")%>% str_replace("/","\\")
+#denmarkstrokepdf$strokeinc<-str_replace(denmarkstrokepdf$X3,"as.date(format=%d%b)","as.character(dates)")###did not work
+denmarkstrokepdf$strokeinc<-str_replace(denmarkstrokepdf$X3,"3-Jun","3/6") %>%str_replace("Aug-43","8/43")%>%str_replace("Sep-23","9/23") %>%str_replace("Apr-14","4/14") %>%str_replace("4-May","4/5")
+
+denmarkstrokepdf$strokenum<-str_replace(denmarkstrokepdf$strokeinc, "[0-9]*","")%>% str_replace("/","\\")
+
+denmarkstrokepdf$Uoplyst<-str_replace(denmarkstrokepdf$Uoplyst,"Bornholms Regionskommune","Bornholm")
+denmarkstrokepdf$Uoplyst<-str_replace(denmarkstrokepdf$Uoplyst,"Lyngby-Tårbæk","Lyngby-Taarbæk")
+denmarkstrokepdf$Uoplyst<-str_replace(denmarkstrokepdf$Uoplyst, "Århus","Aarhus")
+
+
 save(denmarkstrokepdf, file= "denmarkstrokepdf.Rda")
 
 ###Kommunemap
-Kommuner<-st_read("./DAGIREF_SHAPE_UTM32-EUREF89/ADM/KOMMUNE.shp")
-save(Kommuner, file="Kommuner.Rda")
-mapview(kommuner)
-View(Kommuner)
-Kommuner1<-select(Kommuner, starts_with("KOMNAVN"), starts_with("KOMKODE"))
-save(Kommuner1, file="Kommuner1.Rda")
-
+#Kommuner<-st_read("./DAGIREF_SHAPE_UTM32-EUREF89/ADM/KOMMUNE.shp")
+#save(Kommuner, file="Kommuner.Rda")
+#mapview(kommuner)
+#View(Kommuner)
+#Kommuner1<-select(Kommuner, starts_with("KOMNAVN"), starts_with("KOMKODE"))
+#save(Kommuner1, file="Kommuner1.Rda")
 
 #Kommuner.multi<-group_by(Kommuner,KOMKODE)%>%summarize(geometry=st_combine(geometry))
 #save(Kommuner.multi, file="Kommuner.multi.Rda")
 #Kommunerfinal<-st_join(Kommuner.multi, Kommuner1, by=c(KOMKODE))
 #View(Kommunerfinal)
 
-Kommuner.multi1<-group_by(Kommuner,KOMNAVN)%>%summarize(geometry=st_combine(geometry))
-save(Kommuner.multi, file="Kommuner.multi1.Rda")
+#Kommuner.multi1<-group_by(Kommuner,KOMNAVN)%>%summarize(geometry=st_combine(geometry))
+#save(Kommuner.multi, file="Kommuner.multi1.Rda")
+load("Kommuner.multi1.Rda")
 ###Kommuner.multi1 is the shapefile!
 
 
 ##join DemoKom (demografic) with denmarkstroke (strokedensity)
 if(file.exists("DemoStroke.Rda")){load("DemoStroke.Rda")} else {
+
 DemoStroke<-right_join(denmarkstrokepdf, Kommuner.multi1, by=c("Uoplyst" = "KOMNAVN"))
 save(DemoStroke, file = "DemoStroke.Rda")}
 View(DemoStroke)
 
-###UPS first st_sf transform or crs?###
-mapview(DemoStroke)
+DemoStroke_sf<-st_sf(DemoStroke)
+
+#mapview(DemoStroke_sf, col.regions="strokenum")
 
 library(tmap)
 tmap_mode("view")
-DemoStroke<-mutate(DemoStroke)
-tm_shape(DemoStroke, name= "Strokes inDK kommuner 2018")+tm_polygons("stroke_DK_2018", id="Strokenum", popup.vars=c("Cases"="stroke_DK_2018"), alpha=0.6)
+
+
+tm_shape(DemoStroke_sf)+tm_polygons("strokenum", palette="YlOrBr",title="Incidens af Stroke DK 2018")
 
