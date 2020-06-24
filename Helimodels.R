@@ -1,5 +1,6 @@
 # Helimodel
 
+<<<<<<< HEAD
 ems<-5#ems to airborne
 speed<-0.25#speed
 onsc<-20#onscenetime
@@ -14,11 +15,28 @@ europeRGDK <- mutate(europeRGDK, DirectDistanceToNearestCSC   = pmin(DirectDista
 
 #MODeL MOTHeRSHOP HeLI LVO
 europeRGDK<-mutate(europeRGDK, HeliMothershipLVO = (as.numeric(europeRGDK$DirectDistanceToNearestHeli+europeRGDK$DirectDistanceToNearestCSC))*speed+ems+onsc+gr1)
+=======
+load("europeRGDK.Rda")
+
+europeRGDK <- mutate(europeRGDK, DirectDistanceToNearestCSC   = pmin(DirectDistanceToAarhus,DirectDistanceToOdense,DirectDistanceToBlegdamsvej  )
+)
+#CSC
+europeRGDK<-mutate(europeRGDK, HeliMothership = (europeRGDK$DirectDistanceToNearestHeli+europeRGDK$DirectDistanceToNearestCSC))
+europeRGDK<-mutate(europeRGDK, TimeHeliMothership = HeliMothership*0.25)
+europeRGDK$TimeHeliMothership= as.numeric(europeRGDK$TimeHeliMothership)
+europeRGDK$TimeHeliMothership=europeRGDK$TimeHeliMothership+20
+#PSC
+europeRGDK<-mutate(europeRGDK, HeliDripShip =(europeRGDK$DirectDistanceToNearestHeli+europeRGDK$DirectDistanceToNearestHosp))
+
+save(europeRGDK, file="eurpeRGDK.RDA")
+
+>>>>>>> 0b03632b3070c5def6ec6723bae52d407606ced0
 library(tmaptools)
 
 library(tmap)
 tmap_mode("view")
 europeRGDK_sf<-st_sf(europeRGDK)
+<<<<<<< HEAD
 HospLocations_sf<-st_sf(HospLocations)
 tm_shape(europeRGDK_sf)+tm_polygons("HeliMothershipLVO",palette="inferno", n=o ,title="time to groin at csc with heli and mothershipmodel")
 
@@ -95,5 +113,8 @@ DD$DSHelitime_non_LVO<-ifelse(DD$DirectDistanceToNearestPSC<DD$DirectDistanceToN
 DD_sf<-st_sf(DD)
 tm_shape(DD_sf)+tm_dots("DSHelitime_non_LVO",palette="inferno", n=o ,title="time to IVT with heli and drip an shipmodel")
 
+=======
+tm_shape(europeRGDK_sf)+tm_polygons("TimeHeliMothership",palette="inferno", n=20 ,title="time to csc with heli and mothershipmodel")
+>>>>>>> 0b03632b3070c5def6ec6723bae52d407606ced0
 
 
