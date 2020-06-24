@@ -1,24 +1,19 @@
 # Helimodel
 
-e<-5#ems to airborne
-s<-0.25#speed
-o<-20#onscenetime
-d<-60#DIDO
-n<-27#dor-needle
-g1<-68#dor-groin mothership
-g2<-41#dor-groin drip and ship
+ems<-5#ems to airborne
+speed<-0.25#speed
+onsc<-20#onscenetime
+dido<-60#DIDO at PSC
+ne<-27#dor-needle
+gr1<-68#dor-groin mothership
+gr2<-41#dor-groin drip and ship
 
 load("europeRGDK.Rda")
 
 europeRGDK <- mutate(europeRGDK, DirectDistanceToNearestCSC   = pmin(DirectDistanceToAarhus,DirectDistanceToOdense,DirectDistanceToBlegdamsvej))
 
-#MODEL MOTHERSHOP HELI LVO
-europeRGDK<-mutate(europeRGDK, HeliMothershipLVO = (as.numeric(europeRGDK$DirectDistanceToNearestHeli+europeRGDK$DirectDistanceToNearestCSC))*s+o+g1)
-#MODEL MOTHERSHOP HELI non-LVO
-europeRGDK<-mutate(europeRGDK, HeliMothership_non_LVO = (as.numeric(europeRGDK$DirectDistanceToNearestHeli+europeRGDK$DirectDistanceToNearestCSC))*s+o+n)
-
-save(europeRGDK, file="eurpeRGDK.RDA")
-
+#MODeL MOTHeRSHOP HeLI LVO
+europeRGDK<-mutate(europeRGDK, HeliMothershipLVO = (as.numeric(europeRGDK$DirectDistanceToNearestHeli+europeRGDK$DirectDistanceToNearestCSC))*speed+ems+onsc+gr1)
 library(tmaptools)
 
 library(tmap)
@@ -26,6 +21,15 @@ tmap_mode("view")
 europeRGDK_sf<-st_sf(europeRGDK)
 HospLocations_sf<-st_sf(HospLocations)
 tm_shape(europeRGDK_sf)+tm_polygons("HeliMothershipLVO",palette="inferno", n=o ,title="time to groin at csc with heli and mothershipmodel")
+
+
+#MODeL MOTHeRSHOP HeLI non-LVO
+europeRGDK<-mutate(europeRGDK, HeliMothership_non_LVO = (as.numeric(europeRGDK$DirectDistanceToNearestHeli+europeRGDK$DirectDistanceToNearestCSC))*speed+ems+onsc+ne)
+europeRGDK_sf<-st_sf(europeRGDK)
+tm_shape(europeRGDK_sf)+tm_polygons("HeliMothership_non_LVO",palette="inferno", n=o ,title="time to IVT at csc with heli and mothershipmodel")
+
+save(europeRGDK, file="eurpeRGDK.RDA")
+
 
 ## DRIP AND SHIP MODELS
 europeRGDK<-mutate(europeRGDK, DirectDistanceToNearestPSC =pmin(DirectDistanceToAalborg,DirectDistanceToHolstebro, DirectDistanceToVejle, DirectDistanceToEsbjerg, DirectDistanceToSoenderborg, DirectDistanceToRoskilde, DirectDistanceToGlostrup)) 
@@ -49,36 +53,47 @@ HospLocations <- mutate(HospLocations,
   )
 save(HospLocations, file = "HospLocations.Rda")
 
-#PROBLEMS PROBLEMS:
-europeRGDK<-mutate(europeRGDK,D_PSC_CSC = while(europeRGDK$DirectDistanceToNearestHosp==europeRGDK$DirectDistanceToAarhus){HospLocations[1,"DD_from_PSC_to_CSC"]},
-                     while(europeRGDK$DirectDistanceToNearestHosp==europeRGDK$DirectDistanceToAalborg){HospLocations[2,"DD_from_PSC_to_CSC"]},
-                     while(europeRGDK$DirectDistanceToNearestHosp==europeRGDK$DirectDistanceToHolstebro){HospLocations[3,"DD_from_PSC_to_CSC"]},
-                     while(europeRGDK$DirectDistanceToNearestHosp==europeRGDK$DirectDistanceToVejle){HospLocations[4,"DD_from_PSC_to_CSC"]},
-                     while(europeRGDK$DirectDistanceToNearestHosp==europeRGDK$DirectDistanceToEsbjerg){HospLocations[5,"DD_from_PSC_to_CSC"]},
-                     while(europeRGDK$DirectDistanceToNearestHosp==europeRGDK$DirectDistanceToSoenderborg){HospLocations[6,"DD_from_PSC_to_CSC"]},
-                     while(europeRGDK$DirectDistanceToNearestHosp==europeRGDK$DirectDistanceToOdense){HospLocations[7,"DD_from_PSC_to_CSC"]},
-                     while(europeRGDK$DirectDistanceToNearestHosp==europeRGDK$DirectDistanceToRoskilde){HospLocations[8,"DD_from_PSC_to_CSC"]},
-                     while(europeRGDK$DirectDistanceToNearestHosp==europeRGDK$DirectDistanceToBlegdamsvej){HospLocations[9,"DD_from_PSC_to_CSC"]},
-                     while(europeRGDK$DirectDistanceToNearestHosp==europeRGDK$DirectDistanceToGlostrup){HospLocations[10,"DD_from_PSC_to_CSC"]})
 
-#MODEL DRIP AND SHIP HELI LVO
-DSHelitimeLVO<-if(DirectDistanceToNearestPSC<DirectDistanceToNearestCSC){e+as.numeric(europeRGDK$DirectDistanceToNearestHeli)*s
-  +o
-  +as.numeric(europeRGDK$DirectDistanceToNearestHosp)*s+##i think we should try to put in ground here
-    d+
-    as.numeric(D_PSC_CSC)*s+
-    g2
+hosp<-c("Aarhus","Aalborg","Holstebro","Vejle","Esbjerg","Soenderborg","Odense","Roskilde","Blegdamsvej", "Glostrup")
+hosp<-cbind.data.frame(hosp,HospLocations)
+save(hosp,file = "hosp.rda")
+
+
+europeRGDK_centroid <- st_centroid(europeRGDK)
+hh<-select(europeRGDK_centroid,DirectDistanceToAarhus,
+           DirectDistanceToAalborg,DirectDistanceToHolstebro,
+           DirectDistanceToVejle,DirectDistanceToEsbjerg, DirectDistanceToSoenderborg,DirectDistanceToOdense,DirectDistanceToRoskilde,DirectDistanceToBlegdamsvej,DirectDistanceToGlostrup)
+hh<-apply(st_drop_geometry(hh),MARGIN=1,which.min)
+hh<-c("Aarhus","Aalborg","Holstebro","Vejle","Esbjerg","Soenderborg","Odense","Roskilde","Blegdamsvej", "Glostrup")[hh]
+europeRGDK_centroid<-mutate(europeRGDK_centroid, NearestHosp=hh)
+
+DD<-right_join(europeRGDK_centroid,hosp, by=c("NearestHosp"="hosp"))
+
+#MODeL DRIP AND SHIP HeLI LVO
+DD$DSHelitimeLVO<-ifelse(DD$DirectDistanceToNearestPSC<DD$DirectDistanceToNearestCSC,
+  (ems+as.numeric(DD$DirectDistanceToNearestHeli)*speed
+  +onsc
+  +as.numeric(DD$DirectDistanceToNearestHosp)*speed+##i think we should try to put in ground here
+    dido+
+    as.numeric(DD$DD_from_PSC_to_CSC)*speed+
+    gr2)
  
-    }else{HeliMothershipLVO}
-  
-#MODEL DRIP AND SHIP HELI non-LVO
-DSHelitime_non_LVO<-if(DirectDistanceToNearestPSC<DirectDistanceToNearestCSC){e+as.numeric(europeRGDK$DirectDistanceToNearestHeli)*s
-  +o
-  +as.numeric(europeRGDK$DirectDistanceToNearestHosp)*s+##i think we should try to put in ground here
-    n
-  
-}else{HeliMothership_non_LVO}
+    ,DD$HeliMothershipLVO)
 
+DD_sf<-st_sf(DD)
+tm_shape(DD_sf)+tm_dots("DSHelitimeLVO",palette="inferno", n=o ,title="time to groin at csc with heli and drip an shipmodel")
+
+  
+#MODeL DRIP AND SHIP HELI non-LVO
+DD$DSHelitime_non_LVO<-ifelse(DD$DirectDistanceToNearestPSC<DD$DirectDistanceToNearestCSC,ems+as.numeric(DD$DirectDistanceToNearestHeli)*speed
+  +onsc
+  +as.numeric(DD$DirectDistanceToNearestHosp)*s+##i think we should try to put in ground here
+    ne
+  
+,DD$HeliMothership_non_LVO)
+
+DD_sf<-st_sf(DD)
+tm_shape(DD_sf)+tm_dots("DSHelitime_non_LVO",palette="inferno", n=o ,title="time to IVT with heli and drip an shipmodel")
 
 
 
